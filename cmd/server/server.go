@@ -6,7 +6,7 @@ import (
 	redis2 "github.com/go-redis/redis/v9"
 	"github.com/nullsimon/c10k-go/cmd/server/redis"
 	"github.com/valyala/fasthttp"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +20,10 @@ const (
 )
 
 func init() {
-	gormDB, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	//gormDB, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	dsn := "root:secret@tcp(127.0.0.1:3306)/ccc?charset=utf8mb4&parseTime=True&loc=Local"
+
+	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	db = gormDB
 	if err != nil {
 		panic("failed to connect database")
