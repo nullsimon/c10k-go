@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/nullsimon/c10k-go/cmd/server/redis"
 	"github.com/valyala/fasthttp"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -59,11 +57,13 @@ func init() {
 	}
 
 	// init user cache
-	db.First(userCache, "name = ?", "demo-0")
+	var user User
+	db.First(&user, "name = ?", "demo-0")
+	userCache = &user
 	// init product cache
-	db.First(productCache, "code = ?", "Sticker")
+	productCache = &product
 	// init quantity to redis
-	redis.InitQuantity(context.Background(), redis.NewClient(), Quantity)
+	//redis.InitQuantity(context.Background(), redis.NewClient(), Quantity)
 }
 
 // request handler in fasthttp style, i.e. just plain function.
