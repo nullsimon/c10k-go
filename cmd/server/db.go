@@ -24,7 +24,7 @@ type Order struct {
 	gorm.Model
 	UserID    uint   `gorm:"index"`
 	ProductId uint   `gorm:"index"`
-	Status    string `gorm:"not null;default:null"`
+	Status    string `gorm:"default:null"`
 }
 
 // success
