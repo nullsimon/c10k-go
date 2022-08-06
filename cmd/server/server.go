@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/nullsimon/c10k-go/cmd/server/redis"
 	"github.com/valyala/fasthttp"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"math/rand"
 )
 
 var db *gorm.DB
+var userCache *User
+var productCache *Product
 
 const (
 	Quantity = 10000 * 10000 // 库存数量
@@ -54,6 +57,13 @@ func init() {
 			db.Create(&User{Name: fmt.Sprintf("demo-%d", i)})
 		}
 	}
+
+	// init user cache
+	db.First(userCache, "name = ?", "demo-0")
+	// init product cache
+	db.First(productCache, "code = ?", "Sticker")
+	// init quantity to redis
+	redis.InitQuantity(context.Background(), redis.NewClient(), Quantity)
 }
 
 // request handler in fasthttp style, i.e. just plain function.
@@ -63,28 +73,12 @@ func fastHTTPHandler(ctx *fasthttp.RequestCtx) {
 
 func createOrderHandler(ctx *fasthttp.RequestCtx) {
 	// mock get user, 10 percent not found
-	var user User
-	name := fmt.Sprintf("demo-%d", rand.Intn(11000))
-	where := map[string]interface{}{
-		"name": name,
-	}
-	db.First(&user, where)
-	if user.ID == 0 {
-		fmt.Fprintf(ctx, "user not found\n")
-		return
-	}
+	user := userCache
+
 	// get product, only one product, maybe cache it
-	var product Product
-	where = map[string]interface{}{
-		"code": string(ctx.QueryArgs().Peek("code")),
-	}
-	db.First(&product, where)
-	if product.ID == 0 {
-		fmt.Fprintf(ctx, "product not found\n")
-		return
-	}
+	product := productCache
 	// create order
-	err := creatOrder(db, user, product)
+	err := creatOrder(db, *user, *product)
 	if err != nil {
 		fmt.Fprintf(ctx, `error: %v`, err)
 		return
