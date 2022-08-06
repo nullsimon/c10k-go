@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	redis2 "github.com/go-redis/redis/v9"
+	"github.com/nullsimon/c10k-go/cmd/server/redis"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +28,7 @@ type Order struct {
 }
 
 // success
-func creatOrder(db *gorm.DB, user User, product Product) error {
+func creatOrder(db *gorm.DB, redisClient *redis2.Client, user User, product Product) error {
 
 	// begin transaction
 	tx := db.Begin()
@@ -45,26 +48,16 @@ func creatOrder(db *gorm.DB, user User, product Product) error {
 		}
 	}()
 
-	// lock read product
-	tx.Set("gorm:query_option", "FOR UPDATE").First(&product)
-
-	// check quantity
-	if product.Quantity < 1 {
-		Errno = 1
-		return fmt.Errorf("create order failed: %v", Errno)
-	}
-	// reduce quantity
-	product.Quantity--
-	// update product
-	err := tx.Save(&product).Error
-	if err != nil {
+	// redis descrease quantity
+	ok := redis.DecreaseQuantity(context.Background(), redisClient, product.Code, 1)
+	if !ok {
 		Errno = 2
-		return fmt.Errorf("create order failed: %v", Errno)
+		return fmt.Errorf("redis decrease quantity failed: %v", Errno)
 	}
 
 	// create order
 	order := Order{UserID: user.ID, ProductId: product.ID, Status: "pending"}
-	err = tx.Create(&order).Error
+	err := tx.Create(&order).Error
 	if err != nil {
 		Errno = 3
 		return fmt.Errorf("create order failed: %v", Errno)

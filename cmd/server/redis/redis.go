@@ -13,15 +13,15 @@ func NewClient() *redis.Client {
 	})
 }
 
-func InitQuantity(ctx context.Context, r *redis.Client, quantity int) {
-	err := r.Set(ctx, "quantity", quantity, 0).Err()
+func InitQuantity(ctx context.Context, r *redis.Client, key string, quantity int) {
+	err := r.Set(ctx, key, quantity, 0).Err()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func DecreaseQuantity(ctx context.Context, r *redis.Client, quantity int64) bool {
-	err := r.DecrBy(ctx, "quantity", quantity).Err()
+func DecreaseQuantity(ctx context.Context, r *redis.Client, key string, quantity int64) bool {
+	err := r.DecrBy(ctx, key, quantity).Err()
 	if err != nil {
 		panic(err)
 		return false

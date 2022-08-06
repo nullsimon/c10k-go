@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	redis2 "github.com/go-redis/redis/v9"
+	"github.com/nullsimon/c10k-go/cmd/server/redis"
 	"github.com/valyala/fasthttp"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -10,6 +13,7 @@ import (
 var db *gorm.DB
 var userCache *User
 var productCache *Product
+var redisClient *redis2.Client
 
 const (
 	Quantity = 10000 * 10000 // 库存数量
@@ -25,6 +29,9 @@ func init() {
 	db.AutoMigrate(&Product{})
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Order{})
+
+	// 初始化 redis
+	redisClient = redis.NewClient()
 
 	// get product
 	var product Product
@@ -62,8 +69,9 @@ func init() {
 	userCache = &user
 	// init product cache
 	productCache = &product
+	key := product.Code
 	// init quantity to redis
-	//redis.InitQuantity(context.Background(), redis.NewClient(), Quantity)
+	redis.InitQuantity(context.Background(), redisClient, key, Quantity)
 }
 
 // request handler in fasthttp style, i.e. just plain function.
@@ -78,7 +86,7 @@ func createOrderHandler(ctx *fasthttp.RequestCtx) {
 	// get product, only one product, maybe cache it
 	product := productCache
 	// create order
-	err := creatOrder(db, *user, *product)
+	err := creatOrder(db, redisClient, *user, *product)
 	if err != nil {
 		fmt.Fprintf(ctx, `error: %v`, err)
 		return
