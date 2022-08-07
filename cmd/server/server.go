@@ -7,6 +7,7 @@ import (
 	"github.com/nullsimon/c10k-go/cmd/server/redis"
 	"github.com/valyala/fasthttp"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +23,10 @@ const (
 func init() {
 	//gormDB, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	dsn := "root:secret@tcp(127.0.0.1:3306)/ccc?charset=utf8mb4&parseTime=True&loc=Local"
+	//postgres
+	dsnPg := "host=localhost user=gorm password=gorm dbname=ccc port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+	_, err := gorm.Open(postgres.Open(dsnPg), &gorm.Config{})
+
 	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	sqlDB, _ := gormDB.DB()
