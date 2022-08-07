@@ -22,8 +22,12 @@ const (
 func init() {
 	//gormDB, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	dsn := "root:secret@tcp(127.0.0.1:3306)/ccc?charset=utf8mb4&parseTime=True&loc=Local"
-
 	gormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
+	sqlDB, _ := gormDB.DB()
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+
 	db = gormDB
 	if err != nil {
 		panic("failed to connect database")
